@@ -1,6 +1,14 @@
 import os
 from PySide6.QtCore import Qt, QDateTime, QTimer, QRectF
-from PySide6.QtGui import QIcon, QPixmap, QColor, QPainter, QPainterPath, QBrush, QTextCursor
+from PySide6.QtGui import (
+    QIcon,
+    QPixmap,
+    QColor,
+    QPainter,
+    QPainterPath,
+    QBrush,
+    QTextCursor,
+)
 from PySide6.QtWidgets import (
     QHBoxLayout,
     QPushButton,
@@ -34,8 +42,12 @@ class NoteWindow(QWidget):
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
 
         self.setStyleSheet(
-            "background: rgba(0, 0, 0, 0); color: #62622f; border: 0; border-radius:20px; "
-            "border-radius:7px; font-size: 16pt; "
+            "background: rgba(0, 0, 0, 0);"
+            "color: #62622f;"
+            "border: 0;"
+            "border-radius:20px;"
+            "border-radius:7px;"
+            "font-size: 16pt; "
             "QComboBox {border: 1px solid gray; border-radius: 3px; "
             "padding: 1px 18px 1px 3px; min-width: 6em;}"
             "QComboBox::drop-down {subcontrol-origin: padding; "
@@ -56,7 +68,9 @@ class NoteWindow(QWidget):
         self.unstick_btn = QPushButton()
         self.unstick_btn.setToolTip("minimize")
         self.unstick_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.set_button_icon(self.unstick_btn, os.path.join('resources', 'minimize.png'))
+        self.set_button_icon(
+            self.unstick_btn, os.path.join('resources', 'minimize.png')
+        )
         self.unstick_btn.clicked.connect(self.unstick)
         buttons.addWidget(self.unstick_btn)
 
@@ -68,7 +82,9 @@ class NoteWindow(QWidget):
         self.delete_btn = QPushButton()
         self.delete_btn.setToolTip('delete')
         self.delete_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.set_button_icon(self.delete_btn, os.path.join('resources', 'trash.png'))
+        self.set_button_icon(
+            self.delete_btn, os.path.join('resources', 'trash.png')
+        )
         self.delete_btn.clicked.connect(self.delete)
         buttons.addWidget(self.delete_btn)
 
@@ -108,7 +124,7 @@ class NoteWindow(QWidget):
             }}
 
             QCheckBox::indicator:unchecked {{
-                image: url({os.path.join('resources', 'unchecked.png')}); /* Set background for unchecked */
+                image: url({os.path.join('resources', 'unchecked.png')});
             }}
 
             QCheckBox::indicator:checked {{
@@ -143,7 +159,9 @@ class NoteWindow(QWidget):
         # Create a label
         self.timer_label = QLabel("Deadline", self.frame)
         self.timer_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.timer_label.setStyleSheet("background-color: white; color: black; padding: 5px;")
+        self.timer_label.setStyleSheet(
+            "background-color: white; color: black; padding: 5px;"
+        )
 
         # create label for the timer
         self.time_remaining_label = QLabel("", self.frame)
@@ -191,9 +209,8 @@ class NoteWindow(QWidget):
 
     def text_changed(self):
         self.text.blockSignals(True)
-        # cursor_pos = self.text.textCursor().position()  # Store current cursor position
         self.text.setText(auto_list(self.text.toPlainText()))
-        self.text.setMinimumHeight(self.text.document().size().height())  # Ensure minimum height is set
+        self.text.setMinimumHeight(self.text.document().size().height())
         self.text.adjustSize()
         cursor = self.text.textCursor()
         cursor.movePosition(QTextCursor.End)  # Restore cursor position
@@ -264,7 +281,9 @@ class NoteWindow(QWidget):
         # Set the priority combo box
         index = self.priority_combo.findText(self.note.priority)
         timerEnabled = 1 if self.note.timer_enabled else 0
-        date_time = QDateTime.fromSecsSinceEpoch(self.note.timer_time if self.note.timer_time else 1746378000)
+        date_time = QDateTime.fromSecsSinceEpoch(
+            self.note.timer_time if self.note.timer_time else 1746378000
+        )
         # print(f"Timer time: {date_time.toString()}")
         self.text.setPlainText(self.note.text if self.note.text else "")
 
@@ -346,7 +365,8 @@ class NoteWindow(QWidget):
             text_color = "#62622f"
 
         self.setStyleSheet(
-            f"background: rgba(0, 0, 0, 0); color: {text_color}; border: 0; border-radius:20px; "
+            f"background: rgba(0, 0, 0, 0); color: {text_color};"
+            f"border: 0; border-radius:20px; "
             f"border-radius:7px; font-size: 16pt; "
             f"QComboBox {{border: 1px solid gray; border-radius: 3px; "
             f"padding: 1px 18px 1px 3px; min-width: 6em;}}"
@@ -375,17 +395,31 @@ class NoteWindow(QWidget):
         )
 
         if self.note.priority in ("Critical", "High", "Medium"):
-            self.set_button_icon(self.unstick_btn, os.path.join('resources', 'minimize.png'), QColor(text_color))
-            self.set_button_icon(self.delete_btn, os.path.join('resources', 'trash.png'),  QColor(text_color))
+            self.set_button_icon(
+                self.unstick_btn, os.path.join('resources', 'minimize.png'),
+                QColor(text_color)
+            )
+            self.set_button_icon(
+                self.delete_btn, os.path.join('resources', 'trash.png'),
+                QColor(text_color)
+            )
             self.line.setStyleSheet(f"background-color: {text_color};")
-            self.divider.setStyleSheet(f"color: {text_color}; font-size: 16pt;")
+            self.divider.setStyleSheet(
+                f"color: {text_color}; font-size: 16pt;"
+            )
             self.resize(300, 200)
             self.setWindowFlag(Qt.WindowStaysOnTopHint, True)
         else:
-            self.set_button_icon(self.unstick_btn, os.path.join('resources', 'minimize.png'))
-            self.set_button_icon(self.delete_btn, os.path.join('resources', 'trash.png'))
+            self.set_button_icon(
+                self.unstick_btn, os.path.join('resources', 'minimize.png')
+            )
+            self.set_button_icon(
+                self.delete_btn, os.path.join('resources', 'trash.png')
+            )
             self.line.setStyleSheet(f"background-color: {text_color};")
-            self.divider.setStyleSheet(f"color: {text_color}; font-size: 16pt;")
+            self.divider.setStyleSheet(
+                f"color: {text_color}; font-size: 16pt;"
+            )
             self.resize(300, 200)
             self.setWindowFlag(Qt.WindowStaysOnTopHint, False)
         self.show()

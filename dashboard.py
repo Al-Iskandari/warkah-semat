@@ -109,7 +109,9 @@ class Dashboard(QDialog):
         note_window = next(
             (
                 note_window
-                for note_window_id, note_window in self.active_notewindows.items()
+                for note_window_id, note_window in (
+                    self.active_notewindows.items()
+                )
                 if note_window.note.id == note_id
             ),
             None,
@@ -154,24 +156,32 @@ class Dashboard(QDialog):
             note_window = next(
                 (
                     note_window
-                    for note_window_id, note_window in self.active_notewindows.items()
+                    for note_window_id, note_window in (
+                        self.active_notewindows.items()
+                    )
                     if note_window.note.id == note_id
                 ),
                 None,
             )
             if note_window and note_window.note.timer_enabled:
                 if note_window.note.timer_time is not None:
-                    time_remaining_ms = (
-                        QDateTime.fromSecsSinceEpoch(note_window.note.timer_time).toMSecsSinceEpoch()
-                        - QDateTime.currentDateTime().toMSecsSinceEpoch()
+                    timer_time_epoch = QDateTime.fromSecsSinceEpoch(
+                        note_window.note.timer_time
+                    ).toMSecsSinceEpoch()
+                    current_time_epoch = (
+                        QDateTime.currentDateTime().toMSecsSinceEpoch()
                     )
+                    time_remaining_ms = timer_time_epoch - current_time_epoch
                     if time_remaining_ms >= 0:
                         days, seconds = divmod(
                             time_remaining_ms // 1000, 24 * 3600
                         )
                         hours, seconds = divmod(seconds, 3600)
                         minutes, seconds = divmod(seconds, 60)
-                        time_remaining_str = f"{int(days)}d {int(hours)}h {int(minutes)}m {int(seconds)}s"
+                        time_remaining_str = (
+                            f"{int(days)}d {int(hours)}h "
+                            f"{int(minutes)}m {int(seconds)}s"
+                        )
                     else:
                         time_remaining_str = "Timer Expired"
                     item = self.table.item(row, 4)

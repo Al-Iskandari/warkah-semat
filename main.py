@@ -1,3 +1,4 @@
+import os
 import sys
 
 from PySide6.QtGui import QAction, QIcon
@@ -32,7 +33,7 @@ for note in notes:
 
 
 # Create the icon
-icon = QIcon("sticky-note.png")
+icon = QIcon(os.path.join('resources', 'sticky-note.png'))
 
 # Create the tray
 tray = QSystemTrayIcon()
