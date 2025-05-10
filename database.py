@@ -1,4 +1,12 @@
-from sqlalchemy import Column, Integer, String, Boolean, BigInteger, create_engine
+import os
+from sqlalchemy import (
+    Column,
+    Integer,
+    String,
+    Boolean,
+    BigInteger,
+    create_engine,
+)
 from sqlalchemy.orm import declarative_base, sessionmaker
 from sqlalchemy import inspect
 
@@ -17,8 +25,11 @@ class Note(Base):
     timer_time = Column(BigInteger, nullable=True)
 
 
+# Update the database path
+DATABASE_URL = f"sqlite:///{os.path.join('resources', 'notes.db')}"
+
 # Database setup
-engine = create_engine("sqlite:///notes.db")
+engine = create_engine(DATABASE_URL)
 
 # Check if the table exists, if not, create it
 inspector = inspect(engine)
@@ -29,9 +40,21 @@ else:
     columns = [column['name'] for column in inspector.get_columns('notes')]
     if 'x' not in columns or 'y' not in columns:
         Base.metadata.drop_all(engine)  # Drop the existing table
-        Base.metadata.create_all(engine)  # Create the table with the new schema
+        # Create the table with the new schema
+        Base.metadata.create_all(engine)
 
 
 # Session setup
-Session = sessionmaker(bind=engine)
-session = Session()
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+
+# Dependency
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+
+session = SessionLocal()
