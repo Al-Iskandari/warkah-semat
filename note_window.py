@@ -1,5 +1,5 @@
 import os
-from PySide6.QtCore import Qt, QDateTime, QTimer, QRectF
+from PySide6.QtCore import Qt, QDateTime, QTimer, QRectF, Signal
 from PySide6.QtGui import (
     QIcon,
     QPixmap,
@@ -26,6 +26,8 @@ from utils import auto_list
 
 
 class NoteWindow(QWidget):
+    note_updated = Signal()
+
     def __init__(self, note=None, active_notewindows=None):
         super().__init__()
         # Store active_notewindows
@@ -326,12 +328,14 @@ class NoteWindow(QWidget):
         session.add(self.note)
         session.commit()
         self.update_styles()
+        self.note_updated.emit()
 
     def delete(self):
         session.delete(self.note)
         session.commit()
         if self.active_notewindows is not None:
             del self.active_notewindows[id(self)]
+        self.note_updated.emit()
         self.close()
 
     def unstick(self):
