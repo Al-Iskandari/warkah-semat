@@ -20,9 +20,20 @@ from PySide6.QtWidgets import (
     QCheckBox,
     QLabel,
     QFrame,
+    QToolButton,
 )
 from database import Note, session
 from utils import auto_list
+import platform
+
+if platform.system() == "Windows":
+    import winsound
+elif platform.system() == "Linux":
+    try:
+        from playsound import playsound
+    except ImportError:
+        print("Please install playsound using: pip install playsound")
+    import notify2
 
 
 class NoteWindow(QWidget):
@@ -90,6 +101,10 @@ class NoteWindow(QWidget):
         self.delete_btn.clicked.connect(self.delete)
         buttons.addWidget(self.delete_btn)
 
+        self.notification_title = "Sticky Note Deadline"
+        self.notification_shown = False
+        self.sound_muted = False
+
         buttons.setAlignment(Qt.AlignmentFlag.AlignRight)
         buttons.setContentsMargins(0, 0, 0, 0)
         layout.addLayout(buttons)
@@ -139,6 +154,7 @@ class NoteWindow(QWidget):
 
         self.timer_input = QDateTimeEdit()
         self.timer_input.setCalendarPopup(True)
+        self.timer_input.setDateTime(QDateTime.currentDateTime())
         self.timer_input.dateTimeChanged.connect(self.save)
         self.timer_input.setVisible(False)  # Initially hidden
         layout.addWidget(self.timer_input)
@@ -158,6 +174,20 @@ class NoteWindow(QWidget):
         self.frame.setLineWidth(2)
         self.frame.setStyleSheet("border: 1px solid black; margin: 20px;")
 
+        # Mute button
+        self.mute_button = QToolButton()
+        self.mute_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.mute_button.setToolTip("Mute/Unmute Sound")
+        self.mute_button.setCheckable(True)
+        self.mute_button.setChecked(False)  # Initially unmuted
+        self.set_button_icon(
+            self.mute_button, os.path.join('resources', 'sound_on.png')
+        )  # Initial icon
+        self.mute_button.setStyleSheet(
+            "QToolButton {background-color: transparent; border: none;}"
+            "QToolButton:hover {background-color: rgba(255, 255, 255, 50);}"
+        )
+
         # Create a label
         self.timer_label = QLabel("Deadline", self.frame)
         self.timer_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -175,6 +205,7 @@ class NoteWindow(QWidget):
         # Layout setup
         layoutTimer = QVBoxLayout()
         layoutTimer.addWidget(self.frame)
+        layoutTimer.addWidget(self.mute_button)
         layoutTimer.setContentsMargins(10, 10, 10, 10)  # Remove margins
 
         self.main_layout_timer = QVBoxLayout()
@@ -184,6 +215,7 @@ class NoteWindow(QWidget):
 
         # Adjust label position to overlap the border
         self.timer_label.move(10, -10)
+        self.mute_button.move(200, 5)
         self.time_remaining_label.move(10, 25)
 
         # Adjust frame and label size
@@ -192,8 +224,9 @@ class NoteWindow(QWidget):
         self.time_remaining_label.setFixedWidth(self.frame.width() - 20)
 
         self.setLayout(layout)
-
         self.text.textChanged.connect(self.text_changed)
+
+        self.mute_button.clicked.connect(self.toggle_mute)
 
         # Store a reference to this note in the active_notewindows
         if self.active_notewindows is not None:
@@ -250,11 +283,17 @@ class NoteWindow(QWidget):
                 self.time_remaining = f"{int(days)}d {int(hours)}h {int(minutes)}m {int(seconds)}s"
             else:
                 self.time_remaining = "Expired"
+                if not self.notification_shown:
+                    self.show_notification()
+                    self.notification_shown = True
+                self.play_notification_sound()
             self.time_remaining_label.setText(self.time_remaining)
             self.frame.setVisible(True)
+            self.mute_button.setVisible(True)
         else:
             self.time_remaining = ""
             self.frame.setVisible(False)
+            self.mute_button.setVisible(False)
 
         self.update()
 
@@ -310,6 +349,7 @@ class NoteWindow(QWidget):
         else:
             self.timer_input.setVisible(False)
 
+        self.notification_shown = False
         self.update_countdown()
 
     def save(self):
@@ -407,6 +447,10 @@ class NoteWindow(QWidget):
                 self.delete_btn, os.path.join('resources', 'trash.png'),
                 QColor(text_color)
             )
+            self.set_button_icon(
+                self.mute_button, os.path.join('resources', 'sound_on.png'),
+                QColor(text_color)
+            )
             self.line.setStyleSheet(f"background-color: {text_color};")
             self.divider.setStyleSheet(
                 f"color: {text_color}; font-size: 16pt;"
@@ -420,6 +464,9 @@ class NoteWindow(QWidget):
             self.set_button_icon(
                 self.delete_btn, os.path.join('resources', 'trash.png')
             )
+            self.set_button_icon(
+                self.mute_button, os.path.join('resources', 'sound_on.png')
+            )
             self.line.setStyleSheet(f"background-color: {text_color};")
             self.divider.setStyleSheet(
                 f"color: {text_color}; font-size: 16pt;"
@@ -427,3 +474,55 @@ class NoteWindow(QWidget):
             self.resize(300, 200)
             self.setWindowFlag(Qt.WindowStaysOnTopHint, False)
         self.show()
+
+    def play_notification_sound(self):
+        if self.sound_muted:
+            return  # Do not play sound if muted
+
+        if platform.system() == "Windows":
+            winsound.PlaySound("SystemExclamation", winsound.SND_ALIAS)
+        elif platform.system() == "Linux":
+            try:
+                playsound(os.path.join('resources', 'notification.mp3'))
+            except NameError:
+                print("Playsound is not installed")
+            except Exception as e:
+                print(f"Error playing sound: {e}")
+        else:
+            print("Platform not supported for sound notifications.")
+
+    def show_notification(self):
+        if platform.system() == "Linux":
+            try:
+                notify2.init("Sticky Notes")
+                notice = notify2.Notification(
+                    self.notification_title,
+                    "Your sticky note timer has expired!",
+                    "dialog-information",
+                )
+                notice.show()
+            except ImportError as e:
+                print(f"Error: {e}. Please make sure dbus and notify2 are installed.")
+        elif platform.system() == "Windows":
+            # Windows implementation (using a message box)
+            import ctypes
+
+            ctypes.windll.user32.MessageBoxW(
+                0, "Your sticky note timer has expired!", self.notification_title, 1
+            )
+        else:
+            print("Platform not supported for notifications.")
+
+    def toggle_mute(self):
+        self.sound_muted = not self.sound_muted
+        if self.sound_muted:
+            self.set_button_icon(
+                self.mute_button, os.path.join('resources', 'sound_off.png')
+            )
+            self.mute_button.setToolTip("Unmute Sound")
+        else:
+            self.set_button_icon(
+                self.mute_button, os.path.join('resources', 'sound_on.png')
+            )
+            self.mute_button.setToolTip("Mute Sound")
+        self.play_notification_sound()
